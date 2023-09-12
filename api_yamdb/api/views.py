@@ -1,7 +1,19 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 
-from .models import Comment, Review, Tiiles
+from .models import Comment, Review, Title, Category
+from .serializers import (TitleSerializer, CategorySerializer,
+                          CommentSerializer, ReviewSerializer)
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -23,7 +35,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
 
     def get_titles(self):
-        return (get_object_or_404(Tiiles, id=self.kwargs.get('titles_id')))
+        return (get_object_or_404(Title, id=self.kwargs.get('titles_id')))
 
     def get_queryset(self):
         return self.get_titles().review.all()
