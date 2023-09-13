@@ -1,35 +1,67 @@
 from rest_framework import serializers
-from rest_framework.relations import SlugRelatedField
+from django.contrib.auth import get_user_model
+from reviews.models import Category, Genre, Title, Review, Comment
 
-from .models import Comment, Review, Category, Title
+User = get_user_model()
 
 
-class TitleSerializer(serializers.ModelSerializer):
+# User Serializer
+class UserSerializer(serializers.ModelSerializer):
+    bio = serializers.CharField(required=False)
 
     class Meta:
-        fields = '__all__'
-        model = Title
+        model = User
+        fields = ('id', 'username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
 
 
+# SignUp Serializer
+class SignUpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField()
+
+
+# Category Serializer
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = ('name', 'slug')
 
 
-class CommentSerializer(serializers.ModelSerializer):
-    user = SlugRelatedField(slug_field='username', read_only=True)
+# Genre Serializer
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
+
+
+# Title Serializer
+class TitleSerializer(serializers.ModelSerializer):
+    genre = GenreSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
-        fields = '__all__'
-        model = Comment
-        read_only_fields = ['user', 'review']
+        model = Title
+        fields = ('id', 'name', 'year', 'description',
+                  'genre', 'category', 'rating')
 
 
+# Review Serializer
 class ReviewSerializer(serializers.ModelSerializer):
-    user = SlugRelatedField(slug_field='username', read_only=True)
+    author = UserSerializer(read_only=True)
 
     class Meta:
-        fields = '__all__'
         model = Review
-        read_only_fields = ['user', 'titles']
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
+
+    # Existing validation logic
+
+
+# Comment Serializer
+class CommentSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'text', 'author', 'pub_date')

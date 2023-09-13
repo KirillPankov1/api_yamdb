@@ -23,10 +23,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'api',
     'reviews',
-<<<<<<< HEAD
-=======
     'rest_framework',
->>>>>>> 47283acbe954c97d13fac0fa51b1f117d084506f
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -107,3 +105,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
+
+'DEFAULT_AUTHENTICATION_CLASSES': (
+    'rest_framework_simplejwt.authentication.JWTAuthentication',
+)

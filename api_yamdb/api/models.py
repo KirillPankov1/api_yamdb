@@ -1,7 +1,15 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.contrib.auth import get_user_model
 
-User = get_user_model()
+
+class CustomUser(AbstractUser):
+    bio = models.TextField(max_length=500, blank=True)
+    ROLE_CHOICES = (
+        ('user', 'User'),
+        ('moderator', 'Moderator'),
+        ('admin', 'Admin'),
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
 
 
 class Category(models.Model):
@@ -35,7 +43,7 @@ class Title(models.Model):
 class Review(models.Model):
     text = models.TextField()
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='reviews')
+        CustomUser, on_delete=models.CASCADE, related_name='reviews')
     score = models.IntegerField()
     pub_date = models.DateTimeField(auto_now_add=True)
     title = models.ForeignKey(
@@ -48,7 +56,7 @@ class Review(models.Model):
 class Comment(models.Model):
     text = models.TextField()
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='comments')
+        CustomUser, on_delete=models.CASCADE, related_name='comments')
     pub_date = models.DateTimeField(auto_now_add=True)
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments')
