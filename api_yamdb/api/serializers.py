@@ -1,11 +1,18 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.contrib.auth import get_user_model
-from reviews.models import Category, Genre, Title, Review, Comment
-from django.core.validators import RegexValidator
 from rest_framework.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
+
+from reviews.models import Category, Genre, Title, Review, Comment
 
 User = get_user_model()
+
+NUMBER_OF_VALUES = 254
+MIN_USER_NAME = 3
+MAX_USER_NAME = 30
+LEN_NAME = 256
+LEN_NAME_SLUG = 50
 
 
 # User Serializer
@@ -19,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
                   'last_name', 'bio', 'role')
 
     def validate_email(self, value):
-        if len(value) > 254:
+        if len(value) > NUMBER_OF_VALUES:
             raise serializers.ValidationError(
                 'Email should not be longer than 254 characters.')
         if User.objects.filter(email=value).exists():
@@ -40,8 +47,8 @@ class UserSerializer(serializers.ModelSerializer):
 class SignUpSerializer(serializers.Serializer):
     email = serializers.EmailField()
     username = serializers.CharField(
-        min_length=3,
-        max_length=30,
+        min_length=MIN_USER_NAME,
+        max_length=MAX_USER_NAME,
         validators=[
             RegexValidator(
                 r'^[a-zA-Z0-9_]+$',
@@ -59,7 +66,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
     def validate_name(self, value):
-        if len(value) > 256:
+        if len(value) > LEN_NAME:
             raise ValidationError(
                 'Category name should not exceed 256 characters.')
         return value
@@ -78,7 +85,7 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
     def validate_slug(self, value):
-        if len(value) > 50:
+        if len(value) > LEN_NAME_SLUG:
             raise ValidationError(
                 'Genre slug should not exceed 50 characters.')
         return value

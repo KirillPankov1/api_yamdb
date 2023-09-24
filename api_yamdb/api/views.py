@@ -5,8 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Avg
 
 from rest_framework.pagination import PageNumberPagination
-
-
 from rest_framework.exceptions import (PermissionDenied,
                                        ValidationError,
                                        NotFound)
@@ -41,13 +39,11 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-# For token and signup
 class SignUpView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-        User = get_user_model()
 
         email = request.data.get('email')
         username = request.data.get('username')
@@ -55,7 +51,6 @@ class SignUpView(APIView):
         email_exists = User.objects.filter(email=email).exists()
         username_exists = User.objects.filter(username=username).exists()
 
-        # Проверка на существование email и username в базе данных
         if email_exists and username_exists:
             return Response({'info': 'User already registered'},
                             status=status.HTTP_200_OK)
@@ -65,19 +60,12 @@ class SignUpView(APIView):
                 {'error': 'Either Email or Username already exists'},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        # Проверка валидности сериализатора и создание пользователя
         if serializer.is_valid():
             User.objects.create_user(
                 username=serializer.validated_data['username'],
                 email=serializer.validated_data['email']
             )
-
-            # Генерация динамического кода подтверждения
-            # (это ваш существующий код)
             confirmation_code = "1234"
-            # Этот код должен быть сгенерирован динамически
-
-            # Отправка кода подтверждения (это ваш существующий код)
             send_confirmation_code(
                 serializer.validated_data['email'], confirmation_code
             )
@@ -108,14 +96,12 @@ class TokenView(APIView):
 
         serializer = MyTokenObtainPairSerializer(data=request.data)
         if serializer.is_valid():
-            # Logic for generating and returning token goes here
             return Response({
                 'token': 'Generated-JWT-Token'}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# For users
 class UserViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'head', 'delete', 'patch']
     queryset = User.objects.all().order_by('username')
@@ -124,8 +110,6 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
 
     def get_queryset(self):
-        print("get_queryset called")
-        print(f"kwargs: {self.kwargs}")
         queryset = super().get_queryset()
         search_term = self.request.query_params.get('search', None)
         if search_term is not None:
@@ -145,8 +129,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        user.is_staff = True  # Set user as admin
-        user.is_superuser = True  # Set user as superuser
+        user.is_staff = True
+        user.is_superuser = True
         user.save()
         return user
 
@@ -221,11 +205,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def list(self, request, *args, **kwargs):
-        # Allow GET for list of categories
         return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
-        # Disallow GET for individual category
         return Response({"detail": "Method 'GET' not allowed."},
                         status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -243,7 +225,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-# For genres
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all().order_by('name')
     serializer_class = GenreSerializer
@@ -294,7 +275,6 @@ class GenreViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_404_NOT_FOUND)
 
 
-# For titles
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.select_related('category').all().order_by('name')
     serializer_class = TitleSerializer
@@ -331,7 +311,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
 
-        # Paginate the queryset
         page = self.paginate_queryset(queryset)
 
         if page is not None:
@@ -371,29 +350,23 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 {"detail": "Authentication credentials were not provided."},
                 status=status.HTTP_401_UNAUTHORIZED)
 
-        # If the user is authenticated,
-        # proceed with the normal creation process
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id__pk')
-        # Changed from 'title_id' to 'title_id__pk'
         try:
             title = Title.objects.get(id=title_id)
         except ObjectDoesNotExist:
             raise NotFound("Title not found.")
 
-        # Check if the user is authenticated
         user = self.request.user
         if not user.is_authenticated:
             raise PermissionDenied(
                 "You must be authenticated to create a review.")
 
-        # Check if the user has already reviewed this title
         if Review.objects.filter(title=title, author=user).exists():
             raise ValidationError("You have already reviewed this title.")
 
-        # Check the score range
         score = serializer.validated_data.get('score')
         if score < 1 or score > 10:
             raise ValidationError("Review score must be between 1 and 10.")
@@ -412,7 +385,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         permission = IsAuthorOrModeratorOrAdmin()
-        # Explicitly check for permission
         if not permission.has_permission(self.request, self):
             raise PermissionDenied(
                 "You don't have permission to delete this review.")
@@ -428,7 +400,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # Update the average rating of the title
         title = instance.title
         avg_rating = Review.objects.filter(
             title=title).aggregate(Avg('score'))['score__avg']
@@ -438,7 +409,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-# For comments
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     queryset = Comment.objects.all()
@@ -451,7 +421,6 @@ class CommentViewSet(viewsets.ModelViewSet):
         if review_id is not None:
             review = get_object_or_404(Review, pk=review_id)
             comments = Comment.objects.filter(review=review).order_by('id')
-            print(f"Debug: review_id={review_id}, comments={comments}")
             return comments
         return Comment.objects.none().order_by('id')
 
@@ -481,7 +450,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        print(response.data)  # Debug print
         return response
 
     def post(self, request, *args, **kwargs):
