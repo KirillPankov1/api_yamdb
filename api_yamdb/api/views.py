@@ -1,3 +1,4 @@
+import logging
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import get_object_or_404
@@ -32,7 +33,6 @@ from .permissions import (IsAdminOrReadOnly, IsAuthorOrModeratorOrAdmin,
                           IsAdminOrAuthenticatedForList, IsAdminOrSuperUser,
                           IsAdminOrSelf, IsAdminOrTargetUser)
 from .utils import send_confirmation_code, TitleFilter, check_user_permission
-import logging
 
 
 User = get_user_model()
@@ -87,7 +87,6 @@ class TokenView(APIView):
             return Response({'error': 'Username is required.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        User = get_user_model()
         try:
             User.objects.get(username=username)
         except User.DoesNotExist:
@@ -130,19 +129,9 @@ class UserViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = serializer.save()
         user.is_staff = True
-        user.is_superuser = True
+        user.is_superuser = False
         user.save()
         return user
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data,
-                            status=status.HTTP_201_CREATED,
-                            headers=headers)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminCreateUserView(generics.CreateAPIView):
@@ -185,6 +174,11 @@ class CurrentUserView(generics.RetrieveUpdateAPIView):
         return Response(serializer.data)
 
 
+####
+#
+#Запретить get-запросы
+#
+###
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
@@ -194,31 +188,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
     lookup_field = 'slug'
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data,
-                            status=status.HTTP_201_CREATED,
-                            headers=headers)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
         return Response({"detail": "Method 'GET' not allowed."},
                         status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    def destroy(self, request, *args, **kwargs):
-        slug = kwargs.get('slug')
-        if slug is None:
-            return Response({"detail": "Slug is required"},
-                            status=status.HTTP_400_BAD_REQUEST)
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get(self, request, *args, **kwargs):
         return Response({"detail": "Method 'GET' not allowed."},
@@ -240,39 +214,11 @@ class GenreViewSet(viewsets.ModelViewSet):
             self.permission_classes = [permissions.AllowAny]
         return super().get_permissions()
 
-    def create(self, request):
-        serializer = GenreSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     def retrieve(self,
                  request,
                  slug=None):
         return Response({"detail": "Method 'GET' not allowed."},
                         status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def update(self, request, slug=None):
-        try:
-            genre = Genre.objects.get(slug=slug)
-        except Genre.DoesNotExist:
-            return Response({'error': 'Genre not found.'},
-                            status=status.HTTP_404_NOT_FOUND)
-        serializer = GenreSerializer(genre, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, slug=None):
-        try:
-            genre = Genre.objects.get(slug=slug)
-            genre.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Genre.DoesNotExist:
-            return Response({'error': 'Genre not found.'},
-                            status=status.HTTP_404_NOT_FOUND)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -373,41 +319,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=user, title=title)
         title.update_rating()
 
-    def perform_update(self, serializer):
-        instance = self.get_object()
-        user = self.request.user
-        permission_check = check_user_permission(instance, user)
-        if permission_check is not True:
-            return permission_check
-        serializer.save()
-        title = instance.title
-        title.update_rating()
-
-    def perform_destroy(self, instance):
-        permission = IsAuthorOrModeratorOrAdmin()
-        if not permission.has_permission(self.request, self):
-            raise PermissionDenied(
-                "You don't have permission to delete this review.")
-        instance.delete()
-        title = instance.title
-        title.update_rating()
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance,
-                                         data=request.data,
-                                         partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        title = instance.title
-        avg_rating = Review.objects.filter(
-            title=title).aggregate(Avg('score'))['score__avg']
-        title.rating = avg_rating
-        title.save()
-
-        return Response(serializer.data)
-
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
@@ -438,19 +349,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         except Review.DoesNotExist:
             raise NotFound("Review with the given ID does not exist.")
         user = self.request.user
-        if user is None:
-            raise PermissionDenied("User must be authenticated")
         serializer.save(review=review, author=user)
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        return response
 
     def post(self, request, *args, **kwargs):
         return Response(

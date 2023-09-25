@@ -1,8 +1,9 @@
+from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
+
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ValidationError
-from django.contrib.auth import get_user_model
-from django.core.validators import RegexValidator
 
 from reviews.models import Category, Genre, Title, Review, Comment
 
@@ -15,7 +16,6 @@ LEN_NAME = 256
 LEN_NAME_SLUG = 50
 
 
-# User Serializer
 class UserSerializer(serializers.ModelSerializer):
     bio = serializers.CharField(required=False)
     email = serializers.EmailField(required=True)
@@ -109,9 +109,6 @@ class TitleSerializer(serializers.ModelSerializer):
 
         return data
 
-    def to_representation(self, instance):
-        return super().to_representation(instance)
-
 
 class TitleWriteSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
@@ -142,11 +139,6 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = ('id', 'text', 'author', 'pub_date')
 
-    def validate(self, data):
-        return data
-
-    def create(self, validated_data):
-        return super().create(validated_data)
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):

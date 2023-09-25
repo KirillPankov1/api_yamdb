@@ -1,5 +1,10 @@
 from django.contrib.auth.models import AnonymousUser
+
 from rest_framework import permissions
+
+ROLE_ADMIN= 'admin'
+ROLE_MODERATOR= 'moderator'
+ROLE_USER = 'user'
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -8,9 +13,8 @@ class IsAdminOrReadOnly(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return hasattr(request.user, 'role') and request.user.role == 'admin'
+        return (request.method in permissions.SAFE_METHODS
+                or (hasattr(request.user, 'role') and request.user.role == ROLE_ADMIN))
 
 
 class IsAdminOrAuthenticatedOrReadOnly(permissions.BasePermission):
@@ -39,7 +43,7 @@ class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return obj.author == request.user or request.user.role in [
-            'moderator', 'admin']
+            ROLE_MODERATOR, ROLE_ADMIN]
 
 
 class IsAdminOrAuthenticatedForList(permissions.BasePermission):
@@ -52,7 +56,7 @@ class IsAdminOrAuthenticatedForList(permissions.BasePermission):
         if view.action == 'list':
             if not request.user or not request.user.is_authenticated:
                 return False
-            return request.user.role == 'admin'
+            return request.user.role == ROLE_ADMIN
         return True
 
 
@@ -70,7 +74,7 @@ class IsAdminOrSuperUser(permissions.BasePermission):
         if isinstance(request.user, AnonymousUser):
             return False
 
-        return (hasattr(request.user, 'role') and request.user.role == 'admin'
+        return (hasattr(request.user, 'role') and request.user.role == ROLE_ADMIN
                 ) or request.user.is_superuser or request.user.is_staff
 
 
@@ -107,7 +111,7 @@ class IsAdminOrTargetUser(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Allow admins to retrieve any user
-        if request.user.role == 'admin':
+        if request.user.role == ROLE_ADMIN:
             return True
 
         # Allow users to retrieve only themselves
@@ -127,6 +131,6 @@ class IsAuthorOrUserOrModeratorOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return obj.author == request.user or request.user.role in ['user',
-                                                                   'moderator',
-                                                                   'admin']
+        return obj.author == request.user or request.user.role in [ROLE_USER,
+                                                                   ROLE_MODERATOR,
+                                                                   ROLE_ADMIN]
