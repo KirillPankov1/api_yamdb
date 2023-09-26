@@ -1,10 +1,9 @@
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth import get_user_model
 
 from rest_framework import permissions
 
-ROLE_ADMIN= 'admin'
-ROLE_MODERATOR= 'moderator'
-ROLE_USER = 'user'
+Roles = get_user_model().Roles
 
 
 class IsSafeMethod(permissions.BasePermission):
@@ -16,7 +15,7 @@ class IsSafeMethod(permissions.BasePermission):
 class IsModeratorOrHigher(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        return (hasattr(request.user, 'role') and request.user.role in [ROLE_MODERATOR, ROLE_ADMIN] or request.user.is_superuser)
+        return (hasattr(request.user, 'role') and request.user.role in [Roles.MODERATOR, Roles.ADMIN] or request.user.is_superuser)
 
     
 class IsAuthor(permissions.BasePermission):
@@ -31,7 +30,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return (request.method in permissions.SAFE_METHODS
-                or (hasattr(request.user, 'role') and request.user.role == ROLE_ADMIN))
+                or (hasattr(request.user, 'role') and request.user.role == Roles.ADMIN))
 
 
 class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
@@ -44,8 +43,7 @@ class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         print(obj.author.username, request.user.username )
-        return (hasattr(request.user, 'role') and (obj.author == request.user or request.user.role in [
-            ROLE_MODERATOR, ROLE_ADMIN]))
+        return (hasattr(request.user, 'role') and (obj.author == request.user or request.user.role in [Roles.MODERATOR, Roles.ADMIN]))
 
 
 class IsAdminOrSuperUser(permissions.BasePermission):
@@ -53,7 +51,7 @@ class IsAdminOrSuperUser(permissions.BasePermission):
     Custom permission to only allow admin or superusers to access.
     """
     def has_permission(self, request, view):
-        return (hasattr(request.user, 'role') and request.user.role == ROLE_ADMIN
+        return (hasattr(request.user, 'role') and request.user.role == Roles.ADMIN
                 ) or request.user.is_superuser
 
 

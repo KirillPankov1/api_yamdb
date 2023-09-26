@@ -1,37 +1,36 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
-from django.utils.translation import gettext_lazy as _
 
 from api.utils import get_confirmation_code
 
 
 class CustomUser(AbstractUser):
-    ROLE_CHOICES = (
-        ('user', _('User')),
-        ('moderator', _('Moderator')),
-        ('admin', _('Admin')),
-    )
+    class Roles(models.TextChoices):
+        USER = "user"
+        MODERATOR = "moderator"
+        ADMIN = "admin"
+
     role = models.CharField(max_length=10,
-                            choices=ROLE_CHOICES,
-                            default='user')
+                            choices=Roles.choices,
+                            default=Roles.USER)
     bio = models.TextField(max_length=500, blank=True)
     groups = models.ManyToManyField(
         Group,
         blank=True,
         related_name="custom_user_set",
         related_query_name="custom_user",
-        verbose_name=_('groups')
+        verbose_name=('groups')
     )
     user_permissions = models.ManyToManyField(
         Permission,
         blank=True,
         related_name="custom_user_set",
         related_query_name="custom_user",
-        verbose_name=_('user permissions'),
+        verbose_name=('user permissions'),
     )
 
     confirmation_code = models.TextField(blank = False, default = get_confirmation_code())
 
     class Meta:
-        verbose_name = _('custom user')
-        verbose_name_plural = _('custom users')
+        verbose_name = ('custom user')
+        verbose_name_plural = ('custom users')
