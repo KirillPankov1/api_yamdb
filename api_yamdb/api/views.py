@@ -6,15 +6,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Avg
 
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import (PermissionDenied,
-                                       ValidationError,
-                                       NotFound)
+from rest_framework.exceptions import (ValidationError)
 from rest_framework import (generics,
                             viewsets,
                             permissions,
                             status,
                             pagination,
                             filters)
+from rest_framework import mixins
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -132,57 +131,36 @@ class CurrentUserView(generics.RetrieveUpdateAPIView):
         return Response(serializer.data)
 
 
-####
-#
-#Запретить get-запросы
-#
-###
-class CategoryViewSet(viewsets.ModelViewSet):
+
+class CreateDeleteListViewSet(mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet):
+    pass 
+
+
+class CategoryViewSet(CreateDeleteListViewSet):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
-    http_method_names = ['get', 'post', 'put', 'delete', 'head', 'options']
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
 
 
-    def retrieve(self, request, *args, **kwargs):
-        return Response({"detail": "Method 'GET' not allowed."},
-                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-    def get(self, request, *args, **kwargs):
-        return Response({"detail": "Method 'GET' not allowed."},
-                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(CreateDeleteListViewSet):
     queryset = Genre.objects.all().order_by('name')
     serializer_class = GenreSerializer
-    http_method_names = ['get', 'post', 'put', 'delete', 'head', 'options']
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
     permission_classes = [IsAdminOrSuperUser | IsSafeMethod]
 
-    def retrieve(self,
-                 request,
-                 slug=None):
-        return Response({"detail": "Method 'GET' not allowed."},
-                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.select_related('category').all().order_by('name')
     serializer_class = TitleSerializer
-    http_method_names = ['get',
-                         'post',
-                         'put',
-                         'patch',
-                         'delete',
-                         'head',
-                         'options']
+    http_method_names = ['get', 'post', 'patch', 'delete',]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_class = TitleFilter
     pagination_class = PageNumberPagination
@@ -193,33 +171,10 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleWriteSerializer
         return TitleSerializer
 
-    def create(self, request):
-        serializer = TitleWriteSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def list(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-
-        if page is not None:
-            serializer = TitleSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PUT':
-            return Response(
-                {"detail": "Method 'PUT' not allowed for this endpoint."},
-                status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super().update(request, *args, **kwargs)
-
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    http_method_names = ['get', 'post', 'head', 'delete', 'patch']
+    http_method_names = ['get', 'post', 'delete', 'patch']
     permission_classes = [IsAuthorOrModeratorOrAdmin | IsSafeMethod]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     pagination_class = PageNumberPagination
