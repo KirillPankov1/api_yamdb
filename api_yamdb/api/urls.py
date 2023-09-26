@@ -25,9 +25,14 @@ reviews_router.register(r'comments',
 
 app_name = 'api'
 
+auth = [
+    path('signup/', views.SignUpView.as_view(), name='signup'),
+    path('token/', views.TokenView.as_view(), name='token'),
+
+]
+
 urlpatterns = [
-    path('v1/auth/signup/', views.SignUpView.as_view(), name='signup'),
-    path('v1/auth/token/', views.TokenView.as_view(), name='token'),
+    path('v1/auth/', include(auth)),
     path('v1/users/me/', views.CurrentUserView.as_view(), name='current_user'),
     path('v1/', include(router.urls)),
     path('v1/', include(titles_router.urls)),

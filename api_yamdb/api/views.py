@@ -62,21 +62,19 @@ class SignUpView(APIView):
                 {'error': 'Either Email or Username already exists'},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        if serializer.is_valid():
-            User.objects.create_user(
-                username=serializer.validated_data['username'],
-                email=serializer.validated_data['email']
-            )
-            confirmation_code = "1234"
-            send_confirmation_code(
-                serializer.validated_data['email'], confirmation_code
-            )
+        serializer.is_valid(raise_exception=True)
+        User.objects.create_user(
+            username=serializer.validated_data['username'],
+            email=serializer.validated_data['email']
+        )
+        confirmation_code = "1234"
+        send_confirmation_code(
+            serializer.validated_data['email'], confirmation_code
+        )
 
-            return Response(
-                serializer.validated_data, status=status.HTTP_200_OK
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            serializer.validated_data, status=status.HTTP_200_OK
+        )
 
 
 class TokenView(APIView):
@@ -89,18 +87,11 @@ class TokenView(APIView):
             return Response({'error': 'Username is required.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response({'error': 'User does not exist'},
-                            status=status.HTTP_404_NOT_FOUND)
-
+        get_object_or_404(User, username = username)
         serializer = MyTokenObtainPairSerializer(data=request.data)
-        if serializer.is_valid():
-            return Response({
-                'token': 'Generated-JWT-Token'}, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        return Response({
+            'token': 'Generated-JWT-Token'}, status=status.HTTP_200_OK)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -202,10 +193,9 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     def create(self, request):
         serializer = TitleWriteSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
@@ -253,22 +243,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id__pk')
-        try:
-            title = Title.objects.get(id=title_id)
-        except ObjectDoesNotExist:
-            raise NotFound("Title not found.")
-
+        title = get_object_or_404(Title, id=title_id)
         user = self.request.user
-        if not user.is_authenticated:
-            raise PermissionDenied(
-                "You must be authenticated to create a review.")
 
         if Review.objects.filter(title=title, author=user).exists():
             raise ValidationError("You have already reviewed this title.")
 
-        score = serializer.validated_data.get('score')
-        if score < 1 or score > 10:
-            raise ValidationError("Review score must be between 1 and 10.")
         serializer.save(author=user, title=title)
         title.update_rating()
 
@@ -286,7 +266,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             review = get_object_or_404(Review, pk=review_id)
             comments = Comment.objects.filter(review=review).order_by('id')
             return comments
-        return Comment.objects.none().order_by('id')
+        return Comment.objects.order_by('id')
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
@@ -297,10 +277,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         review_id = self.kwargs.get('review__pk', None)
-        try:
-            review = Review.objects.get(pk=review_id)
-        except Review.DoesNotExist:
-            raise NotFound("Review with the given ID does not exist.")
+        review = get_object_or_404(Review, pk=review_id)
         user = self.request.user
         serializer.save(review=review, author=user)
 
