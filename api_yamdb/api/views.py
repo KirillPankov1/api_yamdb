@@ -45,6 +45,7 @@ class SignUpView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+       
         serializer = SignUpSerializer(data=request.data)
 
         email = request.data.get('email')
@@ -52,8 +53,11 @@ class SignUpView(APIView):
 
         email_exists = User.objects.filter(email=email).exists()
         username_exists = User.objects.filter(username=username).exists()
-
+        serializer.is_valid(raise_exception=True)
         if email_exists and username_exists:
+            user = User.objects.get(username = username)
+            send_confirmation_code(
+            serializer.validated_data['email'], user.confirmation_code)
             return Response({'info': 'User already registered'},
                             status=status.HTTP_200_OK)
 
@@ -62,14 +66,12 @@ class SignUpView(APIView):
                 {'error': 'Either Email or Username already exists'},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.is_valid(raise_exception=True)
-        User.objects.create_user(
+        user = User.objects.create_user(
             username=serializer.validated_data['username'],
             email=serializer.validated_data['email']
         )
-        confirmation_code = "1234"
         send_confirmation_code(
-            serializer.validated_data['email'], confirmation_code
+            serializer.validated_data['email'], user.confirmation_code
         )
 
         return Response(

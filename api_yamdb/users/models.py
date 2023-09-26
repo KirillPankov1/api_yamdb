@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
 
+from api.utils import get_confirmation_code
+
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
@@ -27,6 +29,8 @@ class CustomUser(AbstractUser):
         related_query_name="custom_user",
         verbose_name=_('user permissions'),
     )
+
+    confirmation_code = models.TextField(blank = False, default = get_confirmation_code())
 
     class Meta:
         verbose_name = _('custom user')
