@@ -10,7 +10,6 @@ router.register(r'titles', views.TitleViewSet)
 router.register(r'genres', views.GenreViewSet)
 router.register(r'categories', views.CategoryViewSet)
 
-
 titles_router = routers.NestedSimpleRouter(router,
                                            r'titles',
                                            lookup='title_id')
@@ -27,13 +26,10 @@ reviews_router.register(r'comments',
 app_name = 'api'
 
 urlpatterns = [
-    path('auth/signup/', views.SignUpView.as_view(), name='signup'),
-    path('auth/token/', views.TokenView.as_view(), name='token'),
-    path('admin/users/',
-         views.AdminCreateUserView.as_view(),
-         name='admin_create_user'),
-    path('users/me/', views.CurrentUserView.as_view(), name='current_user'),
-    path('', include(router.urls)),
-    path('', include(titles_router.urls)),
-    path('', include(reviews_router.urls)),
+    path('v1/auth/signup/', views.SignUpView.as_view(), name='signup'),
+    path('v1/auth/token/', views.TokenView.as_view(), name='token'),
+    path('v1/users/me/', views.CurrentUserView.as_view(), name='current_user'),
+    path('v1/', include(router.urls)),
+    path('v1/', include(titles_router.urls)),
+    path('v1/', include(reviews_router.urls)),
 ]

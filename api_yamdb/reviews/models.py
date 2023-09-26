@@ -1,38 +1,9 @@
-from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 from django.db.models import Avg
-from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
 
 
-class CustomUser(AbstractUser):
-    ROLE_CHOICES = (
-        ('user', _('User')),
-        ('moderator', _('Moderator')),
-        ('admin', _('Admin')),
-    )
-    role = models.CharField(max_length=10,
-                            choices=ROLE_CHOICES,
-                            default='user')
-    bio = models.TextField(max_length=500, blank=True)
-    groups = models.ManyToManyField(
-        Group,
-        blank=True,
-        related_name="custom_user_set",
-        related_query_name="custom_user",
-        verbose_name=_('groups')
-    )
-    user_permissions = models.ManyToManyField(
-        Permission,
-        blank=True,
-        related_name="custom_user_set",
-        related_query_name="custom_user",
-        verbose_name=_('user permissions'),
-    )
-
-    class Meta:
-        verbose_name = _('custom user')
-        verbose_name_plural = _('custom users')
-
+User = get_user_model()
 
 class Category(models.Model):
     name = models.CharField(max_length=256)
@@ -72,7 +43,7 @@ class Title(models.Model):
 class Review(models.Model):
     text = models.TextField()
     author = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='reviews')
+        User, on_delete=models.CASCADE, related_name='reviews')
     score = models.IntegerField()
     pub_date = models.DateTimeField(auto_now_add=True)
     title = models.ForeignKey(
@@ -85,7 +56,7 @@ class Review(models.Model):
 class Comment(models.Model):
     text = models.TextField()
     author = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='comments')
+        User, on_delete=models.CASCADE, related_name='comments')
     pub_date = models.DateTimeField(auto_now_add=True)
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments')
