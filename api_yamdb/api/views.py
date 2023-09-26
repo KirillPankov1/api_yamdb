@@ -30,9 +30,11 @@ from .serializers import (GenreSerializer,
                           CommentSerializer,
                           MyTokenObtainPairSerializer)
 from .permissions import (IsAdminOrReadOnly, IsAuthorOrModeratorOrAdmin,
-                          IsAdminOrAuthenticatedForList, IsAdminOrSuperUser,
-                          IsAdminOrSelf, IsAdminOrTargetUser)
-from .utils import send_confirmation_code, TitleFilter, check_user_permission
+                         IsAdminOrSuperUser,
+                          IsAdminOrSelf, IsSafeMethod, IsModeratorOrHigher, IsAuthor)
+from .utils import send_confirmation_code
+from .filters import TitleFilter
+
 
 
 User = get_user_model()
@@ -107,6 +109,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     pagination_class = pagination.PageNumberPagination
     lookup_field = 'username'
+    permission_classes = [IsAdminOrSuperUser]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -114,44 +117,6 @@ class UserViewSet(viewsets.ModelViewSet):
         if search_term is not None:
             queryset = queryset.filter(username__icontains=search_term)
         return queryset
-
-    def get_permissions(self):
-        if self.action == 'list':
-            self.permission_classes = [IsAdminOrAuthenticatedForList]
-        elif self.action in ['update', 'partial_update']:
-            self.permission_classes = [IsAdminOrReadOnly]
-        elif self.action == 'destroy':
-            self.permission_classes = [IsAdminOrSuperUser]
-        elif self.action in ['retrieve']:
-            self.permission_classes = [IsAdminOrTargetUser]
-        return super().get_permissions()
-
-    def perform_create(self, serializer):
-        user = serializer.save()
-        user.is_staff = True
-        user.is_superuser = False
-        user.save()
-        return user
-
-
-class AdminCreateUserView(generics.CreateAPIView):
-    permission_classes = [IsAdminOrSuperUser]
-    serializer_class = UserSerializer
-
-    def post(self, request, *args, **kwargs):
-        if request.user and request.user.is_staff or request.user.is_superuser:
-            serializer = self.get_serializer(data=request.data)
-            if serializer.is_valid(raise_exception=True):
-                user = serializer.save()
-                response_data = UserSerializer(
-                    user, context=self.get_serializer_context()).data
-                return Response(response_data,
-                                status=status.HTTP_201_CREATED)
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response({'detail': 'Forbidden'},
-                            status=status.HTTP_403_FORBIDDEN)
 
 
 class CurrentUserView(generics.RetrieveUpdateAPIView):
@@ -206,13 +171,7 @@ class GenreViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
-
-    def get_permissions(self):
-        if self.action in ['create', 'destroy', 'update', 'partial_update']:
-            self.permission_classes = [IsAdminOrSuperUser]
-        else:
-            self.permission_classes = [permissions.AllowAny]
-        return super().get_permissions()
+    permission_classes = [IsAdminOrSuperUser | IsSafeMethod]
 
     def retrieve(self,
                  request,
@@ -234,18 +193,12 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_class = TitleFilter
     pagination_class = PageNumberPagination
+    permission_classes = [IsAdminOrSuperUser | IsSafeMethod]
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return TitleWriteSerializer
         return TitleSerializer
-
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAdminOrSuperUser]
-        else:
-            self.permission_classes = [permissions.AllowAny]
-        return super().get_permissions()
 
     def create(self, request):
         serializer = TitleWriteSerializer(data=request.data)
@@ -275,7 +228,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     http_method_names = ['get', 'post', 'head', 'delete', 'patch']
-    permission_classes = [IsAuthorOrModeratorOrAdmin]
+    permission_classes = [IsAuthorOrModeratorOrAdmin | IsSafeMethod]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     pagination_class = PageNumberPagination
 

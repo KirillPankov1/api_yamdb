@@ -131,6 +131,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'score', 'pub_date', 'title')
 
 
+
 # Comment Serializer
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.CharField(source='author.username', read_only=True)

@@ -1,19 +1,9 @@
-import django_filters
 from django.core.mail import send_mail
-from reviews.models import Title
 from rest_framework.response import Response
 from rest_framework import status
 
 
-class TitleFilter(django_filters.FilterSet):
-    genre = django_filters.CharFilter(field_name='genre__slug')
-    category = django_filters.CharFilter(field_name='category__slug')
-    year = django_filters.NumberFilter(field_name='year')
-    name = django_filters.CharFilter(field_name='name')
 
-    class Meta:
-        model = Title
-        fields = ['genre', 'category', 'year', 'name']
 
 
 def send_confirmation_code(email, code):
