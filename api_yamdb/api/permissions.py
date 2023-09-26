@@ -38,10 +38,14 @@ class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
     """
     Custom permission to only allow authors of an object or admins to edit it.
     """
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated
+
     def has_object_permission(self, request, view, obj):
-        print(obj.author, request.user )
-        return hasattr(request.user, 'role') and (obj.author == request.user or request.user.role in [
-            ROLE_MODERATOR, ROLE_ADMIN])
+        print(obj.author.username, request.user.username )
+        return (hasattr(request.user, 'role') and (obj.author == request.user or request.user.role in [
+            ROLE_MODERATOR, ROLE_ADMIN]))
 
 
 class IsAdminOrSuperUser(permissions.BasePermission):
@@ -49,18 +53,8 @@ class IsAdminOrSuperUser(permissions.BasePermission):
     Custom permission to only allow admin or superusers to access.
     """
     def has_permission(self, request, view):
-        if isinstance(request.user, AnonymousUser):
-            return False
-
         return (hasattr(request.user, 'role') and request.user.role == ROLE_ADMIN
-                ) or request.user.is_superuser or request.user.is_staff
+                ) or request.user.is_superuser
 
 
-class IsAdminOrSelf(permissions.BasePermission):
-    """
-    Custom permission to only allow
-    admin or the user himself to access the object.
-    """
-    def has_object_permission(self, request, view, obj):
-        return request.user.is_staff
 

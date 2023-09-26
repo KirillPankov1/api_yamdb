@@ -7,8 +7,8 @@ from django.db.models import Avg
 
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import (ValidationError)
-from rest_framework import (generics,
-                            viewsets,
+from rest_framework.decorators import action
+from rest_framework import (viewsets,
                             permissions,
                             status,
                             pagination,
@@ -30,7 +30,7 @@ from .serializers import (GenreSerializer,
                           MyTokenObtainPairSerializer)
 from .permissions import (IsAdminOrReadOnly, IsAuthorOrModeratorOrAdmin,
                          IsAdminOrSuperUser,
-                          IsAdminOrSelf, IsSafeMethod, IsModeratorOrHigher, IsAuthor)
+                        IsSafeMethod, IsModeratorOrHigher, IsAuthor)
 from .utils import send_confirmation_code
 from .filters import TitleFilter
 
@@ -109,27 +109,18 @@ class UserViewSet(viewsets.ModelViewSet):
         if search_term is not None:
             queryset = queryset.filter(username__icontains=search_term)
         return queryset
-
-
-class CurrentUserView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAdminOrSelf]
-    serializer_class = UserSerializer
-
-    def get_object(self):
+    
+    @action(detail=False, methods=['patch', 'get'], permission_classes = [permissions.IsAuthenticated])
+    def me(self, request, pk=None):
         user = self.request.user
-        if isinstance(user, AnonymousUser):
-            return None
-        return user
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance is None:
-            return Response({'detail': 'Unauthorized'},
-                            status=status.HTTP_401_UNAUTHORIZED)
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
+        if request.method == 'GET':          
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+        if request.method == 'PATCH':
+            serializer = self.get_serializer(request.user, data=request.data, partial = True)
+            serializer.is_valid(raise_exception = True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CreateDeleteListViewSet(mixins.CreateModelMixin,
@@ -190,14 +181,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title_id = self.kwargs.get('title_id__pk')
         return Review.objects.filter(title__id=title_id).order_by('pub_date')
 
-    def create(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return Response(
-                {"detail": "Authentication credentials were not provided."},
-                status=status.HTTP_401_UNAUTHORIZED)
-
-        return super().create(request, *args, **kwargs)
-
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id__pk')
         title = get_object_or_404(Title, id=title_id)
@@ -216,6 +199,8 @@ class CommentViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'head', 'delete', 'patch']
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     pagination_class = PageNumberPagination
+    permission_classes = [IsAuthorOrModeratorOrAdmin | IsSafeMethod]
+
 
     def get_queryset(self):
         review_id = self.kwargs.get('review__pk', None)
@@ -226,19 +211,15 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Comment.objects.order_by('id')
 
     def get_permissions(self):
-        if self.action in ['update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
-        else:
+        if self.action == 'list' or self.action == 'retrieve':
             self.permission_classes = [permissions.AllowAny]
+        else:
+            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
         return super().get_permissions()
-
+    
     def perform_create(self, serializer):
         review_id = self.kwargs.get('review__pk', None)
         review = get_object_or_404(Review, pk=review_id)
         user = self.request.user
         serializer.save(review=review, author=user)
 
-    def post(self, request, *args, **kwargs):
-        return Response(
-            {'detail': 'Authentication credentials were not provided.'},
-            status=status.HTTP_401_UNAUTHORIZED)

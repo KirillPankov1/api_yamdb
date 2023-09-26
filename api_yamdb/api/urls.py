@@ -33,7 +33,6 @@ auth = [
 
 urlpatterns = [
     path('v1/auth/', include(auth)),
-    path('v1/users/me/', views.CurrentUserView.as_view(), name='current_user'),
     path('v1/', include(router.urls)),
     path('v1/', include(titles_router.urls)),
     path('v1/', include(reviews_router.urls)),
