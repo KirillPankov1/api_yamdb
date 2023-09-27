@@ -15,7 +15,8 @@ class IsSafeMethod(permissions.BasePermission):
 class IsModeratorOrHigher(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        return (hasattr(request.user, 'role') and request.user.role in [Roles.MODERATOR, Roles.ADMIN] or request.user.is_superuser)
+        return (request.user.is_authenticated and  (request.user.role in [Roles.MODERATOR, Roles.ADMIN] or request.user.is_superuser))
+
 
     
 class IsAuthor(permissions.BasePermission):
@@ -42,7 +43,7 @@ class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
         return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        print(obj.author.username, request.user.username )
+        print(obj.author.username, request.user.username, request.user.role )
         return (hasattr(request.user, 'role') and (obj.author == request.user or request.user.role in [Roles.MODERATOR, Roles.ADMIN]))
 
 

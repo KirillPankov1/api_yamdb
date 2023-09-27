@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
@@ -158,10 +159,12 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-
-        # Add custom claims
         token['username'] = user.username
         token['email'] = user.email
         token['role'] = user.role
-
         return token
+    
+    def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
+        username = attrs.get('username')
+        get_object_or_404(User, username = username)
+        return super().validate(attrs)
