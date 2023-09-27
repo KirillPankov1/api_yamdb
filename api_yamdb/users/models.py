@@ -10,6 +10,7 @@ class CustomUser(AbstractUser):
         MODERATOR = "moderator"
         ADMIN = "admin"
 
+    email = models.EmailField(max_length = 254, blank=False, unique = True)
     role = models.CharField(max_length=10,
                             choices=Roles.choices,
                             default=Roles.USER)

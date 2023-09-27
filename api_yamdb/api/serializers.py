@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
+from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -131,6 +132,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date', 'title')
 
+    def validate(self, attrs):
+        if self.context['request'].method == 'POST':
+            title_id = self.context['view'].kwargs.get('title_id__pk')
+            title = get_object_or_404(Title, id=title_id)        
+            author = self.context['request'].user
+            if Review.objects.filter(title = title, author = author).exists():
+                raise ValidationError()
+        return super().validate(attrs)
     
 
 

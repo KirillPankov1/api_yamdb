@@ -50,7 +50,13 @@ class Review(models.Model):
         Title, on_delete=models.CASCADE, related_name='reviews')
 
     class Meta:
-        unique_together = ('title', 'author')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_title_author'
+            )
+        ]
+
 
 
 class Comment(models.Model):

@@ -16,5 +16,4 @@ def send_confirmation_code(email, code):
     subject = 'Your Confirmation Code'
     message = f'Your confirmation code is: {code}'
     from_email = os.getenv('FROM_EMAIL')
-    # This should come from environment variables
     send_mail(subject, message, from_email, [email], fail_silently=False)

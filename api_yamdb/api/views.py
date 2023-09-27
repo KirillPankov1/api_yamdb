@@ -55,10 +55,15 @@ class SignUpView(APIView):
         serializer.is_valid(raise_exception=True)
         if email_exists and username_exists:
             user = User.objects.get(username = username)
-            send_confirmation_code(
-            serializer.validated_data['email'], user.confirmation_code)
-            return Response({'info': 'User already registered'},
-                            status=status.HTTP_200_OK)
+            try:
+                send_confirmation_code(
+                    serializer.validated_data['email'], user.confirmation_code
+                )
+            except Exception:
+                pass
+            return Response(
+                serializer.validated_data, status=status.HTTP_200_OK
+            )
 
         if email_exists or username_exists:
             return Response(
@@ -69,9 +74,12 @@ class SignUpView(APIView):
             username=serializer.validated_data['username'],
             email=serializer.validated_data['email']
         )
-        send_confirmation_code(
-            serializer.validated_data['email'], user.confirmation_code
-        )
+        try:
+            send_confirmation_code(
+                serializer.validated_data['email'], user.confirmation_code
+            )
+        except Exception:
+            pass
 
         return Response(
             serializer.validated_data, status=status.HTTP_200_OK
@@ -185,18 +193,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title_id = self.kwargs.get('title_id__pk')
         title = get_object_or_404(Title, id=title_id)
         user = self.request.user
-
-        if Review.objects.filter(title=title, author=user).exists():
-            raise ValidationError("You have already reviewed this title.")
-
         serializer.save(author=user, title=title)
         title.update_rating()
-
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     queryset = Comment.objects.all()
-    http_method_names = ['get', 'post', 'head', 'delete', 'patch']
+    http_method_names = ['get', 'post', 'delete', 'patch']
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     pagination_class = PageNumberPagination
     permission_classes = [IsAuthorOrModeratorOrAdmin | IsSafeMethod]
