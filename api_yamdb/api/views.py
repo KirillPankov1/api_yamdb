@@ -152,7 +152,7 @@ class GenreViewSet(CreateDeleteListViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.select_related('category').all().order_by('name')
     serializer_class = TitleSerializer
-    http_method_names = ['get', 'post', 'patch', 'delete',]
+    http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_class = TitleFilter
     pagination_class = PageNumberPagination
