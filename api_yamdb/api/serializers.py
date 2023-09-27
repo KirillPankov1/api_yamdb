@@ -163,8 +163,3 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token['role'] = user.role
         return token
-    
-    def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
-        username = attrs.get('username')
-        get_object_or_404(User, username = username)
-        return super().validate(attrs)
