@@ -1,4 +1,3 @@
-from typing import Any, Dict
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
@@ -6,7 +5,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ValidationError
-from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Category, Genre, Title, Review, Comment
 
@@ -37,16 +35,12 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
-        # Проверка на роль пользователя, который делает запрос
         request = self.context.get('request')
         if request and request.user.role != 'admin':
             validated_data.pop('role', None)
-            # Удаление поля role, если оно есть
-
         return super(UserSerializer, self).update(instance, validated_data)
 
 
-# SignUp Serializer
 class SignUpSerializer(serializers.Serializer):
     email = serializers.EmailField()
     username = serializers.CharField(
@@ -62,7 +56,6 @@ class SignUpSerializer(serializers.Serializer):
     )
 
 
-# Category Serializer
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -81,7 +74,6 @@ class CategoryReadSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug']
 
 
-# Genre Serializer
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
@@ -94,7 +86,6 @@ class GenreSerializer(serializers.ModelSerializer):
         return value
 
 
-# Title Serializer
 class TitleSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
@@ -124,7 +115,6 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'year', 'description', 'genre', 'category')
 
 
-# Review Serializer
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.CharField(source='author.username', read_only=True)
     title = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -136,23 +126,19 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if self.context['request'].method == 'POST':
             title_id = self.context['view'].kwargs.get('title_id__pk')
-            title = get_object_or_404(Title, id=title_id)        
+            title = get_object_or_404(Title, id=title_id)
             author = self.context['request'].user
-            if Review.objects.filter(title = title, author = author).exists():
+            if Review.objects.filter(title=title, author=author).exists():
                 raise ValidationError()
         return super().validate(attrs)
-    
 
 
-
-# Comment Serializer
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.CharField(source='author.username', read_only=True)
 
     class Meta:
         model = Comment
         fields = ('id', 'text', 'author', 'pub_date')
-
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):

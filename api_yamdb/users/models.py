@@ -10,7 +10,7 @@ class CustomUser(AbstractUser):
         MODERATOR = "moderator"
         ADMIN = "admin"
 
-    email = models.EmailField(max_length = 254, blank=False, unique = True)
+    email = models.EmailField(max_length=254, blank=False, unique=True)
     role = models.CharField(max_length=10,
                             choices=Roles.choices,
                             default=Roles.USER)
@@ -30,7 +30,8 @@ class CustomUser(AbstractUser):
         verbose_name=('user permissions'),
     )
 
-    confirmation_code = models.TextField(blank = False, default = get_confirmation_code())
+    confirmation_code = models.TextField(blank=False,
+                                         default=get_confirmation_code())
 
     class Meta:
         verbose_name = ('custom user')

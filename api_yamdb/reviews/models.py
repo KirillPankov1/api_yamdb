@@ -1,9 +1,10 @@
 from django.db import models
 from django.db.models import Avg
 from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator, MinValueValidator 
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 User = get_user_model()
+
 
 class Category(models.Model):
     name = models.CharField(max_length=256)
@@ -44,7 +45,8 @@ class Review(models.Model):
     text = models.TextField()
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='reviews')
-    score = models.PositiveSmallIntegerField(validators = [MinValueValidator(1), MaxValueValidator(10)])
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)])
     pub_date = models.DateTimeField(auto_now_add=True)
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews')
@@ -58,7 +60,6 @@ class Review(models.Model):
         ]
 
 
-
 class Comment(models.Model):
     text = models.TextField()
     author = models.ForeignKey(
@@ -66,4 +67,3 @@ class Comment(models.Model):
     pub_date = models.DateTimeField(auto_now_add=True)
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments')
-

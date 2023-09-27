@@ -15,21 +15,22 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import Genre, Category, Title, Review, Comment
-from .serializers import (GenreSerializer,
-                          SignUpSerializer,
-                          UserSerializer,
-                          CategorySerializer,
-                          TitleSerializer,
-                          TitleWriteSerializer,
-                          ReviewSerializer,
-                          CommentSerializer,
-                          MyTokenObtainPairSerializer)
-from .permissions import (IsAuthorOrModeratorOrAdmin,
-                         IsAdminOrSuperUser,
-                        IsSafeMethod,)
+from .serializers import (
+    GenreSerializer,
+    SignUpSerializer,
+    UserSerializer,
+    CategorySerializer,
+    TitleSerializer,
+    TitleWriteSerializer,
+    ReviewSerializer,
+    CommentSerializer,
+    MyTokenObtainPairSerializer,)
+from .permissions import (
+    IsAuthorOrModeratorOrAdmin,
+    IsAdminOrSuperUser,
+    IsSafeMethod,)
 from .utils import send_confirmation_code
 from .filters import TitleFilter
-
 
 
 User = get_user_model()
@@ -40,7 +41,6 @@ class SignUpView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-       
         serializer = SignUpSerializer(data=request.data)
 
         email = request.data.get('email')
@@ -50,7 +50,7 @@ class SignUpView(APIView):
         username_exists = User.objects.filter(username=username).exists()
         serializer.is_valid(raise_exception=True)
         if email_exists and username_exists:
-            user = User.objects.get(username = username)
+            user = User.objects.get(username=username)
             try:
                 send_confirmation_code(
                     serializer.validated_data['email'], user.confirmation_code
@@ -85,12 +85,12 @@ class SignUpView(APIView):
 class TokenView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def post(self, request, format=None): 
+    def post(self, request, format=None):
         username = request.data.get('username')
         if not username:
             return Response({'error': 'Username is required.'},
                             status=status.HTTP_400_BAD_REQUEST)
-        get_object_or_404(User, username = username)
+        get_object_or_404(User, username=username)
         serializer = MyTokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({
@@ -105,26 +105,30 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
     permission_classes = [IsAdminOrSuperUser]
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
-    search_fields = ('username',) 
-    
-    @action(detail=False, methods=['patch', 'get'], permission_classes = [permissions.IsAuthenticated])
+    search_fields = ('username',)
+
+    @action(detail=False,
+            methods=['patch', 'get'],
+            permission_classes=[permissions.IsAuthenticated])
     def me(self, request, pk=None):
         user = self.request.user
-        if request.method == 'GET':          
+        if request.method == 'GET':
             serializer = self.get_serializer(user)
             return Response(serializer.data)
         if request.method == 'PATCH':
-            serializer = self.get_serializer(request.user, data=request.data, partial = True)
-            serializer.is_valid(raise_exception = True)
+            serializer = self.get_serializer(request.user,
+                                             data=request.data,
+                                             partial=True)
+            serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CreateDeleteListViewSet(mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet):
-    pass 
+                              mixins.DestroyModelMixin,
+                              mixins.ListModelMixin,
+                              viewsets.GenericViewSet):
+    pass
 
 
 class CategoryViewSet(CreateDeleteListViewSet):
@@ -163,7 +167,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     http_method_names = ['get', 'post', 'delete', 'patch']
-    filter_backends = [DjangoFilterBackend,]
+    filter_backends = [DjangoFilterBackend, ]
     pagination_class = PageNumberPagination
 
     def get_permissions(self):
@@ -178,7 +182,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title = get_object_or_404(Title, id=title_id)
         return title.reviews.all().order_by('id',)
 
-
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id__pk')
         title = get_object_or_404(Title, id=title_id)
@@ -186,11 +189,12 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=user, title=title)
         title.update_rating()
 
+
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     queryset = Comment.objects.all()
     http_method_names = ['get', 'post', 'delete', 'patch']
-    filter_backends = [DjangoFilterBackend,]
+    filter_backends = [DjangoFilterBackend, ]
     pagination_class = PageNumberPagination
 
     def get_permissions(self):
@@ -199,15 +203,14 @@ class CommentViewSet(viewsets.ModelViewSet):
         else:
             self.permission_classes = [IsAuthorOrModeratorOrAdmin]
         return super().get_permissions()
-    
+
     def get_queryset(self):
         review_id = self.kwargs.get('review__pk', None)
         review = get_object_or_404(Review, pk=review_id)
         return review.comments.all().order_by('id',)
-    
+
     def perform_create(self, serializer):
         review_id = self.kwargs.get('review__pk', None)
         review = get_object_or_404(Review, pk=review_id)
         user = self.request.user
         serializer.save(review=review, author=user)
-
