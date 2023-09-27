@@ -1,19 +1,15 @@
 import logging
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Avg
 
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import (ValidationError)
-from rest_framework.decorators import action
 from rest_framework import (viewsets,
                             permissions,
                             status,
                             pagination,
-                            filters)
-from rest_framework import mixins
+                            filters,
+                            mixins)
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -28,9 +24,9 @@ from .serializers import (GenreSerializer,
                           ReviewSerializer,
                           CommentSerializer,
                           MyTokenObtainPairSerializer)
-from .permissions import (IsAdminOrReadOnly, IsAuthorOrModeratorOrAdmin,
+from .permissions import (IsAuthorOrModeratorOrAdmin,
                          IsAdminOrSuperUser,
-                        IsSafeMethod, IsModeratorOrHigher, IsAuthor)
+                        IsSafeMethod,)
 from .utils import send_confirmation_code
 from .filters import TitleFilter
 
@@ -91,11 +87,9 @@ class TokenView(APIView):
 
     def post(self, request, format=None): 
         username = request.data.get('username')
-
         if not username:
             return Response({'error': 'Username is required.'},
                             status=status.HTTP_400_BAD_REQUEST)
-
         get_object_or_404(User, username = username)
         serializer = MyTokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -112,7 +106,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSuperUser]
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = ('username',) 
-
     
     @action(detail=False, methods=['patch', 'get'], permission_classes = [permissions.IsAuthenticated])
     def me(self, request, pk=None):
@@ -137,7 +130,7 @@ class CreateDeleteListViewSet(mixins.CreateModelMixin,
 class CategoryViewSet(CreateDeleteListViewSet):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsSafeMethod | IsAdminOrSuperUser]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
@@ -170,23 +163,21 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     http_method_names = ['get', 'post', 'delete', 'patch']
-    permission_classes = [IsSafeMethod | IsAuthorOrModeratorOrAdmin]
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter,]
+    filter_backends = [DjangoFilterBackend,]
     pagination_class = PageNumberPagination
-    ordering_fields = ('pub_date',)
+
+    def get_permissions(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            self.permission_classes = [IsSafeMethod]
+        else:
+            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
+        return super().get_permissions()
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id__pk')
         title = get_object_or_404(Title, id=title_id)
-        return title.reviews.all()
-    
-    def get_permissions(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            self.permission_classes = [permissions.AllowAny]
-        else:
-            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
-        return super().get_permissions()
-    
+        return title.reviews.all().order_by('id',)
+
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id__pk')
@@ -199,24 +190,20 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     queryset = Comment.objects.all()
     http_method_names = ['get', 'post', 'delete', 'patch']
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter,]
+    filter_backends = [DjangoFilterBackend,]
     pagination_class = PageNumberPagination
-    permission_classes = [IsSafeMethod | IsAuthorOrModeratorOrAdmin]
-    search_fields = ('following__username',)
-    ordering_fields = ('id',)
 
     def get_permissions(self):
         if self.action == 'list' or self.action == 'retrieve':
-            self.permission_classes = [permissions.AllowAny]
+            self.permission_classes = [IsSafeMethod]
         else:
             self.permission_classes = [IsAuthorOrModeratorOrAdmin]
         return super().get_permissions()
     
-
     def get_queryset(self):
         review_id = self.kwargs.get('review__pk', None)
         review = get_object_or_404(Review, pk=review_id)
-        return review.comments.all()
+        return review.comments.all().order_by('id',)
     
     def perform_create(self, serializer):
         review_id = self.kwargs.get('review__pk', None)
