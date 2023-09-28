@@ -94,7 +94,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def me(self, request, pk=None):
         user = self.request.user
         if request.method == 'GET':
-            serializer = self.get_serializer(user)
+            serializer = self.serializer_class(user)
             return Response(serializer.data)
         if request.method == 'PATCH':
             serializer = self.get_serializer(request.user,
@@ -143,6 +143,8 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return TitleWriteSerializer
         return TitleSerializer
+    
+    
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

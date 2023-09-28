@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
@@ -83,12 +84,6 @@ class GenreSerializer(serializers.ModelSerializer):
         model = Genre
         fields = ('name', 'slug')
 
-    def validate_slug(self, value):
-        if len(value) > LEN_NAME_SLUG:
-            raise ValidationError(
-                'Genre slug should not exceed 50 characters.')
-        return value
-
 
 class TitleSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True, read_only=True)
@@ -147,3 +142,4 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token['role'] = user.role
         return token
+    
