@@ -104,7 +104,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     pagination_class = pagination.PageNumberPagination
     lookup_field = 'username'
-    permission_classes = [IsAdminOrSuperUser]
+    permission_classes = [permissions.IsAuthenticated & IsAdminOrSuperUser]
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = ('username',)
 
@@ -135,7 +135,7 @@ class CreateDeleteListViewSet(mixins.CreateModelMixin,
 class CategoryViewSet(CreateDeleteListViewSet):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
-    permission_classes = [IsSafeMethod | IsAdminOrSuperUser]
+    permission_classes = [IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
@@ -147,7 +147,7 @@ class GenreViewSet(CreateDeleteListViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
-    permission_classes = [IsAdminOrSuperUser | IsSafeMethod]
+    permission_classes = [IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -157,7 +157,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_class = TitleFilter
     pagination_class = PageNumberPagination
-    permission_classes = [IsAdminOrSuperUser | IsSafeMethod]
+    permission_classes = [IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
