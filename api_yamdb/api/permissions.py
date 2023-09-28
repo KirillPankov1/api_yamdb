@@ -24,6 +24,4 @@ class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
 class IsAdminOrSuperUser(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        return ((hasattr(request.user, 'role')
-                and request.user.role == Roles.ADMIN)
-                or request.user.is_superuser)
+        return (request.user.role == Roles.ADMIN or request.user.is_superuser)
