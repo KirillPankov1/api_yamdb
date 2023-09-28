@@ -52,17 +52,24 @@ class SignUpSerializer(serializers.Serializer):
         ]
     )
 
+    def validate(self, attrs):
+        email = attrs.get('email')
+        username = attrs.get('username')
+        email_exists = User.objects.filter(email=email).exists()
+        username_exists = User.objects.filter(username=username).exists()
+        if email_exists and username_exists:
+            user = User.objects.get(username=username)
+            attrs['user'] = user
+        else: 
+            if email_exists or username_exists:
+                raise ValidationError ()
+        return attrs
 
 class CategorySerializer(serializers.ModelSerializer):
+    name = serializers.CharField (max_length = 256)
     class Meta:
         model = Category
         fields = ('name', 'slug')
-
-    def validate_name(self, value):
-        if len(value) > LEN_MAX:
-            raise ValidationError(
-                'Category name should not exceed 256 characters.')
-        return value
 
 
 class CategoryReadSerializer(serializers.ModelSerializer):
@@ -93,12 +100,6 @@ class TitleSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'year', 'description',
                   'genre', 'category', 'rating')
 
-    def validate(self, data):
-        if 'name' not in data:
-            raise serializers.ValidationError(
-                {"name": "This field is required."})
-
-        return data
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
