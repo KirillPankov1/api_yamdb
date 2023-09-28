@@ -1,8 +1,28 @@
-# pytest cache directory #
+# Проект «Api_yamdb» 12 спринт 
 
-This directory contains data from the pytest's cache plugin,
-which provides the `--lf` and `--ff` options, as well as the `cache` fixture.
+*** 
+## Описание проекта 
 
-**Do not** commit this to version control.
+*** 
+## Установка проекта 
+```sh 
+git clone git@github.com:KirillPankov1/api_yamdb.git
+python -m venv venv 
+source venv/Scripts/activate 
+pip install -r requirements.txt 
+python manage.py migrate 
+``` 
+После установки виртуального окружения и установки всех зависимостей запустите сервер и убедитесь в работоспособности 
+`python manage.py runserver` 
+*** 
+## Примеры запросов к API 
+тут должны быть примеры
+*** 
 
-See [the docs](https://docs.pytest.org/en/stable/cache.html) for more information.
+## Об Авторе. 
+
+Панков Кирилл 
+Еникеева Лада
+
+Контакты для предложений: 
+`kpankov217@gmail.com` 

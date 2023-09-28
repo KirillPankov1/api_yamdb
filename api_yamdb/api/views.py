@@ -1,7 +1,7 @@
 import logging
+
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-
 from rest_framework import (viewsets,
                             permissions,
                             status,
@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import Genre, Category, Title, Review, Comment
+
 from .serializers import (
     GenreSerializer,
     SignUpSerializer,
@@ -171,7 +172,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
 
     def get_permissions(self):
-        if self.action == 'list' or self.action == 'retrieve':
+        if self.action in ['list', 'retrieve']:
             self.permission_classes = [IsSafeMethod]
         else:
             self.permission_classes = [IsAuthorOrModeratorOrAdmin]

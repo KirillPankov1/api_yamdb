@@ -1,20 +1,17 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
-
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ValidationError
 
+from api_yamdb.settings import LEN_MAX, LEN_NAME_SLUG, NUMBER_OF_VALUES
 from reviews.models import Category, Genre, Title, Review, Comment
 
 User = get_user_model()
 
-NUMBER_OF_VALUES = 254
 MIN_USER_NAME = 3
 MAX_USER_NAME = 30
-LEN_NAME = 256
-LEN_NAME_SLUG = 50
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -62,7 +59,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
     def validate_name(self, value):
-        if len(value) > LEN_NAME:
+        if len(value) > LEN_MAX:
             raise ValidationError(
                 'Category name should not exceed 256 characters.')
         return value
@@ -129,7 +126,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             title = get_object_or_404(Title, id=title_id)
             author = self.context['request'].user
             if Review.objects.filter(title=title, author=author).exists():
-                raise ValidationError()
+                raise ValidationError('Что-то пошло не так!')
         return super().validate(attrs)
 
 
