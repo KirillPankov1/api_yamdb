@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django.db.models import Avg
 from rest_framework import (viewsets,
                             permissions,
                             status,
@@ -131,7 +132,7 @@ class GenreViewSet(CreateDeleteListViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.select_related('category').all().order_by('name')
+    queryset = Title.objects.all().annotate(Avg('reviews__score')).order_by('name')
     serializer_class = TitleSerializer
     http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
@@ -170,7 +171,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title = get_object_or_404(Title, id=title_id)
         user = self.request.user
         serializer.save(author=user, title=title)
-        title.update_rating()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
