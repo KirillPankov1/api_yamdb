@@ -134,7 +134,8 @@ class GenreViewSet(CreateDeleteListViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all().annotate(Avg('reviews__score')).order_by('name')
+    queryset = Title.objects.all().annotate(
+        Avg('reviews__score')).order_by('name')
     serializer_class = TitleSerializer
     http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
@@ -147,8 +148,6 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return TitleWriteSerializer
         return TitleSerializer
-    
-    
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

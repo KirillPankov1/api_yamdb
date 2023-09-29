@@ -1,4 +1,3 @@
-from typing import Any, Dict
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
@@ -6,7 +5,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ValidationError
 
-from api_yamdb.settings import LEN_MAX, LEN_NAME_SLUG, NUMBER_OF_VALUES
+from api_yamdb.settings import LEN_MAX, NUMBER_OF_VALUES
 from reviews.models import Category, Genre, Title, Review, Comment
 
 User = get_user_model()
@@ -61,13 +60,15 @@ class SignUpSerializer(serializers.Serializer):
         if email_exists and username_exists:
             user = User.objects.get(username=username)
             attrs['user'] = user
-        else: 
+        else:
             if email_exists or username_exists:
-                raise ValidationError ()
+                raise ValidationError()
         return attrs
 
+
 class CategorySerializer(serializers.ModelSerializer):
-    name = serializers.CharField (max_length = 256)
+    name = serializers.CharField(max_length=LEN_MAX)
+
     class Meta:
         model = Category
         fields = ('name', 'slug')
@@ -85,7 +86,6 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
 
-
 class TitleSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
@@ -96,7 +96,6 @@ class TitleSerializer(serializers.ModelSerializer):
         model = Title
         fields = ('id', 'name', 'year', 'description',
                   'genre', 'category', 'rating')
-
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
@@ -144,4 +143,3 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token['role'] = user.role
         return token
-    
