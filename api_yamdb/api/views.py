@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django.db.models import Avg
 from rest_framework import (viewsets,
                             permissions,
                             status,
@@ -43,34 +44,14 @@ class SignUpView(APIView):
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-
-        email = request.data.get('email')
-        username = request.data.get('username')
-
-        email_exists = User.objects.filter(email=email).exists()
-        username_exists = User.objects.filter(username=username).exists()
         serializer.is_valid(raise_exception=True)
-        if email_exists and username_exists:
-            user = User.objects.get(username=username)
-            try:
-                send_confirmation_code(
-                    serializer.validated_data['email'], user.confirmation_code
-                )
-            except Exception:
-                pass
-            return Response(
-                serializer.validated_data, status=status.HTTP_200_OK
-            )
-
-        if email_exists or username_exists:
-            return Response(
-                {'error': 'Either Email or Username already exists'},
-                status=status.HTTP_400_BAD_REQUEST)
-
-        user = User.objects.create_user(
-            username=serializer.validated_data['username'],
-            email=serializer.validated_data['email']
-        )
+        if 'user' in serializer.validated_data:
+            user = serializer.validated_data.get('user')
+            serializer.validated_data.pop('user')
+        else:
+            user = User.objects.create_user(
+                username=serializer.validated_data['username'],
+                email=serializer.validated_data['email'])
         try:
             send_confirmation_code(
                 serializer.validated_data['email'], user.confirmation_code
@@ -153,7 +134,7 @@ class GenreViewSet(CreateDeleteListViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.select_related('category').all().order_by('name')
+    queryset = Title.objects.all().annotate(Avg('reviews__score')).order_by('name')
     serializer_class = TitleSerializer
     http_method_names = ['get', 'post', 'patch', 'delete']
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
@@ -166,6 +147,8 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return TitleWriteSerializer
         return TitleSerializer
+    
+    
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -191,7 +174,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
         title = get_object_or_404(Title, id=title_id)
         user = self.request.user
         serializer.save(author=user, title=title)
-        title.update_rating()
 
 
 class CommentViewSet(viewsets.ModelViewSet):

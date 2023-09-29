@@ -34,11 +34,6 @@ class Title(models.Model):
 
     rating = models.FloatField(null=True, blank=True)
 
-    def update_rating(self):
-        avg_rating = self.reviews.aggregate(Avg('score'))['score__avg']
-        self.rating = avg_rating
-        self.save()
-
     def __str__(self):
         return self.name
 

@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
@@ -52,17 +53,24 @@ class SignUpSerializer(serializers.Serializer):
         ]
     )
 
+    def validate(self, attrs):
+        email = attrs.get('email')
+        username = attrs.get('username')
+        email_exists = User.objects.filter(email=email).exists()
+        username_exists = User.objects.filter(username=username).exists()
+        if email_exists and username_exists:
+            user = User.objects.get(username=username)
+            attrs['user'] = user
+        else: 
+            if email_exists or username_exists:
+                raise ValidationError ()
+        return attrs
 
 class CategorySerializer(serializers.ModelSerializer):
+    name = serializers.CharField (max_length = 256)
     class Meta:
         model = Category
         fields = ('name', 'slug')
-
-    def validate_name(self, value):
-        if len(value) > LEN_MAX:
-            raise ValidationError(
-                'Category name should not exceed 256 characters.')
-        return value
 
 
 class CategoryReadSerializer(serializers.ModelSerializer):
@@ -76,29 +84,19 @@ class GenreSerializer(serializers.ModelSerializer):
         model = Genre
         fields = ('name', 'slug')
 
-    def validate_slug(self, value):
-        if len(value) > LEN_NAME_SLUG:
-            raise ValidationError(
-                'Genre slug should not exceed 50 characters.')
-        return value
 
 
 class TitleSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
-    rating = serializers.IntegerField(read_only=True)
+    rating = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True)
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description',
                   'genre', 'category', 'rating')
 
-    def validate(self, data):
-        if 'name' not in data:
-            raise serializers.ValidationError(
-                {"name": "This field is required."})
-
-        return data
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
@@ -146,3 +144,4 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
         token['role'] = user.role
         return token
+    
