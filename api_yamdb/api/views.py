@@ -80,7 +80,11 @@ class TokenView(APIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get', 'post', 'head', 'delete', 'patch']
+    http_method_names = ['get',
+                         'post',
+                         'head',
+                         'delete',
+                         'patch']
     queryset = User.objects.all().order_by('username')
     serializer_class = UserSerializer
     pagination_class = pagination.PageNumberPagination
