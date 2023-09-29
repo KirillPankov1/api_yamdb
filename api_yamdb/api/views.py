@@ -114,7 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def me(self, request, pk=None):
         user = self.request.user
         if request.method == 'GET':
-            serializer = self.get_serializer(user)
+            serializer = self.serializer_class(user)
             return Response(serializer.data)
         if request.method == 'PATCH':
             serializer = self.get_serializer(request.user,
@@ -135,7 +135,8 @@ class CreateDeleteListViewSet(mixins.CreateModelMixin,
 class CategoryViewSet(CreateDeleteListViewSet):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
-    permission_classes = [IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
+    permission_classes = [
+        IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
@@ -147,7 +148,8 @@ class GenreViewSet(CreateDeleteListViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
-    permission_classes = [IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
+    permission_classes = [
+        IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -157,7 +159,8 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     filterset_class = TitleFilter
     pagination_class = PageNumberPagination
-    permission_classes = [IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
+    permission_classes = [
+        IsSafeMethod | (permissions.IsAuthenticated & IsAdminOrSuperUser)]
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
