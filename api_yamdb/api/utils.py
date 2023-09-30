@@ -1,8 +1,8 @@
 import os
 from random import choice
+from string import ascii_letters
 
 from django.core.mail import send_mail
-from string import ascii_letters
 
 from api_yamdb.settings import FROM_EMAIL
 

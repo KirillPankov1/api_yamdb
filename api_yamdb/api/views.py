@@ -1,42 +1,34 @@
 import logging
+from datetime import datetime, timedelta
 
 import jwt
-from datetime import datetime, timedelta
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from rest_framework import (viewsets,
-                            permissions,
-                            status,
-                            pagination,
-                            filters,
-                            mixins)
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, mixins, pagination, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django_filters.rest_framework import DjangoFilterBackend
 
-from reviews.models import Genre, Category, Title, Review, Comment
-from django.conf import settings
+from reviews.models import Category, Comment, Genre, Review, Title
 
 from .filters import TitleFilter
-from .permissions import (
-    IsAuthorOrModeratorOrAdmin,
-    IsAdminOrSuperUser,
-    IsSafeMethod,)
+from .permissions import IsAdminOrSuperUser, IsAuthorOrModeratorOrAdmin, IsSafeMethod
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
-    TokenSerializer,
     ReviewSerializer,
     SignUpSerializer,
     TitleSerializer,
     TitleWriteSerializer,
-    UserSerializer,)
+    TokenSerializer,
+    UserSerializer,
+)
 from .utils import send_confirmation_code
-
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
