@@ -12,12 +12,11 @@ User = get_user_model()
 
 MIN_USER_NAME = 3
 MAX_USER_NAME = 30
-ADMIN = 'admin'
 
 
 class UserSerializer(serializers.ModelSerializer):
     bio = serializers.CharField(required=False)
-    email = serializers.EmailField(required=True)
+    email = serializers.EmailField(required=True, max_length=NUMBER_OF_VALUES)
 
     class Meta:
         model = User
@@ -25,16 +24,13 @@ class UserSerializer(serializers.ModelSerializer):
                   'last_name', 'bio', 'role')
 
     def validate_email(self, value):
-        if len(value) > NUMBER_OF_VALUES:
-            raise serializers.ValidationError(
-                'Email should not be longer than 254 characters.')
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError('Email already exists.')
         return value
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
-        if request and request.user.role != ADMIN:
+        if request and request.user.role != User.Roles.ADMIN:
             validated_data.pop('role', None)
         return super(UserSerializer, self).update(instance, validated_data)
 
