@@ -51,9 +51,9 @@ class SignUpSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get('email')
         username = attrs.get('username')
-        email_exists = User.objects.filter(email=email).exists()
-        username_exists = User.objects.filter(username=username).exists()
-        if not (email_exists and username_exists):
+        if not (User.objects.filter(username=username, email=email).exists()):
+            email_exists = User.objects.filter(email=email).exists()
+            username_exists = User.objects.filter(username=username).exists()
             if email_exists or username_exists:
                 raise ValidationError(
                     'Invalid data:email or username already in use')
