@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ValidationError
 
 from api_yamdb.settings import LEN_MAX, NUMBER_OF_VALUES
@@ -56,7 +55,8 @@ class SignUpSerializer(serializers.Serializer):
         username_exists = User.objects.filter(username=username).exists()
         if not (email_exists and username_exists):
             if email_exists or username_exists:
-                raise ValidationError('Invalid data:email or username already in use')
+                raise ValidationError(
+                    'Invalid data:email or username already in use')
         return attrs
 
 
@@ -130,11 +130,12 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'pub_date')
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['username'] = user.username
-        token['email'] = user.email
-        token['role'] = user.role
-        return token
+class TokenSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        super().validate(attrs)
+        user = get_object_or_404(User, username=attrs.get('username'))
+        if user.confirmation_code != attrs.get('confirmation_code'):
+            raise ValidationError('Invalid confirmation code')

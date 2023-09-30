@@ -14,6 +14,8 @@ NUMBER_OF_VALUES = 254
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+JWT_ACCESS_TTL = 60 * 5
+
 FROM_EMAIL = os.getenv('FROM_EMAIL')
 
 DEBUG = os.getenv('DEBUG')
