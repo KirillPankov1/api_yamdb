@@ -45,20 +45,15 @@ class SignUpView(APIView):
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if 'user' in serializer.validated_data:
-            user = serializer.validated_data.get('user')
-            serializer.validated_data.pop('user')
-        else:
-            user = User.objects.create_user(
-                username=serializer.validated_data['username'],
-                email=serializer.validated_data['email'])
+        user, _ = User.objects.get_or_create(
+            username=serializer.validated_data['username'],
+            email=serializer.validated_data['email'])
         try:
             send_confirmation_code(
                 serializer.validated_data['email'], user.confirmation_code
             )
         except Exception as error:
             print(error)
-
         return Response(
             serializer.validated_data, status=status.HTTP_200_OK
         )
