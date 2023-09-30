@@ -12,6 +12,7 @@ User = get_user_model()
 
 MIN_USER_NAME = 3
 MAX_USER_NAME = 30
+ADMIN = 'admin'
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -33,7 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
-        if request and request.user.role != 'admin':
+        if request and request.user.role != ADMIN:
             validated_data.pop('role', None)
         return super(UserSerializer, self).update(instance, validated_data)
 
@@ -62,7 +63,8 @@ class SignUpSerializer(serializers.Serializer):
             attrs['user'] = user
         else:
             if email_exists or username_exists:
-                raise ValidationError()
+                raise ValidationError(
+                    'Пользователь с таким email или username')
         return attrs
 
 
@@ -123,7 +125,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             title = get_object_or_404(Title, id=title_id)
             author = self.context['request'].user
             if Review.objects.filter(title=title, author=author).exists():
-                raise ValidationError('Что-то пошло не так!')
+                raise ValidationError('Вы не можете добавить более одного',
+                                      'отзыва на произведение')
         return super().validate(attrs)
 
 

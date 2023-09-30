@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
 
 from api_yamdb.settings import NUMBER_OF_VALUES
-from api.utils import get_confirmation_code
+from core.utils import get_confirmation_code
 
 MAX_LEN_ROLE = 10
 MAX_LEN_BIO = 500

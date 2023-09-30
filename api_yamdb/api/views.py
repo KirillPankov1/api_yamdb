@@ -17,22 +17,22 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import Genre, Category, Title, Review, Comment
 
-from .serializers import (
-    GenreSerializer,
-    SignUpSerializer,
-    UserSerializer,
-    CategorySerializer,
-    TitleSerializer,
-    TitleWriteSerializer,
-    ReviewSerializer,
-    CommentSerializer,
-    MyTokenObtainPairSerializer,)
+from .filters import TitleFilter
 from .permissions import (
     IsAuthorOrModeratorOrAdmin,
     IsAdminOrSuperUser,
     IsSafeMethod,)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    MyTokenObtainPairSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
+    TitleSerializer,
+    TitleWriteSerializer,
+    UserSerializer,)
 from .utils import send_confirmation_code
-from .filters import TitleFilter
 
 
 User = get_user_model()
@@ -56,8 +56,8 @@ class SignUpView(APIView):
             send_confirmation_code(
                 serializer.validated_data['email'], user.confirmation_code
             )
-        except Exception:
-            pass
+        except Exception as error:
+            print(error)
 
         return Response(
             serializer.validated_data, status=status.HTTP_200_OK
@@ -181,13 +181,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    queryset = Comment.objects.all()
+    get_queryset = Comment.objects.all()
     http_method_names = ['get', 'post', 'delete', 'patch']
     filter_backends = [DjangoFilterBackend, ]
     pagination_class = PageNumberPagination
 
     def get_permissions(self):
-        if self.action == 'list' or self.action == 'retrieve':
+        if self.action in ['list', 'retrieve']:
             self.permission_classes = [IsSafeMethod]
         else:
             self.permission_classes = [IsAuthorOrModeratorOrAdmin]
