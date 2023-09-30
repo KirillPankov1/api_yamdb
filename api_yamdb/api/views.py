@@ -1,8 +1,10 @@
 import logging
 
+from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
+import jwt
 from rest_framework import (viewsets,
                             permissions,
                             status,
@@ -16,6 +18,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import Genre, Category, Title, Review, Comment
+from django.conf import settings
 
 from .filters import TitleFilter
 from .permissions import (
@@ -26,7 +29,7 @@ from .serializers import (
     CategorySerializer,
     CommentSerializer,
     GenreSerializer,
-    MyTokenObtainPairSerializer,
+    TokenSerializer,
     ReviewSerializer,
     SignUpSerializer,
     TitleSerializer,
@@ -45,20 +48,15 @@ class SignUpView(APIView):
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if 'user' in serializer.validated_data:
-            user = serializer.validated_data.get('user')
-            serializer.validated_data.pop('user')
-        else:
-            user = User.objects.create_user(
-                username=serializer.validated_data['username'],
-                email=serializer.validated_data['email'])
+        user, _ = User.objects.get_or_create(
+            username=serializer.validated_data['username'],
+            email=serializer.validated_data['email'])
         try:
             send_confirmation_code(
                 serializer.validated_data['email'], user.confirmation_code
             )
         except Exception as error:
             print(error)
-
         return Response(
             serializer.validated_data, status=status.HTTP_200_OK
         )
@@ -67,16 +65,24 @@ class SignUpView(APIView):
 class TokenView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    def get_token(user):
+        access_payload = {
+            'iss': 'api_yamdb',
+            'role': user.role,
+            'username': user.username,
+            'exp': datetime.utcnow() + timedelta(
+                seconds=settings.JWT_ACCESS_TTL),
+            'type': 'access'
+        }
+        access = jwt.encode(payload=access_payload, key=settings.SECRET_KEY)
+        return {'access': access}
+
     def post(self, request, format=None):
-        username = request.data.get('username')
-        if not username:
-            return Response({'error': 'Username is required.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        get_object_or_404(User, username=username)
-        serializer = MyTokenObtainPairSerializer(data=request.data)
+        serializer = TokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        user = User.objects.get(username=request.data.get('username'))
         return Response({
-            'token': 'Generated-JWT-Token'}, status=status.HTTP_200_OK)
+            'token': self.get_token(user)}, status=status.HTTP_200_OK)
 
 
 class UserViewSet(viewsets.ModelViewSet):

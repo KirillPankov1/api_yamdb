@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ValidationError
 
 from api_yamdb.settings import LEN_MAX, NUMBER_OF_VALUES
@@ -12,12 +11,11 @@ User = get_user_model()
 
 MIN_USER_NAME = 3
 MAX_USER_NAME = 30
-ADMIN = 'admin'
 
 
 class UserSerializer(serializers.ModelSerializer):
     bio = serializers.CharField(required=False)
-    email = serializers.EmailField(required=True)
+    email = serializers.EmailField(required=True, max_length=NUMBER_OF_VALUES)
 
     class Meta:
         model = User
@@ -25,16 +23,13 @@ class UserSerializer(serializers.ModelSerializer):
                   'last_name', 'bio', 'role')
 
     def validate_email(self, value):
-        if len(value) > NUMBER_OF_VALUES:
-            raise serializers.ValidationError(
-                'Email should not be longer than 254 characters.')
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError('Email already exists.')
         return value
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
-        if request and request.user.role != ADMIN:
+        if request and request.user.role != User.Roles.ADMIN:
             validated_data.pop('role', None)
         return super(UserSerializer, self).update(instance, validated_data)
 
@@ -58,10 +53,7 @@ class SignUpSerializer(serializers.Serializer):
         username = attrs.get('username')
         email_exists = User.objects.filter(email=email).exists()
         username_exists = User.objects.filter(username=username).exists()
-        if email_exists and username_exists:
-            user = User.objects.get(username=username)
-            attrs['user'] = user
-        else:
+        if not (email_exists and username_exists):
             if email_exists or username_exists:
                 raise ValidationError(
                     'Пользователь с таким email или username уже есть.')
@@ -138,11 +130,12 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'pub_date')
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['username'] = user.username
-        token['email'] = user.email
-        token['role'] = user.role
-        return token
+class TokenSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        super().validate(attrs)
+        user = get_object_or_404(User, username=attrs.get('username'))
+        if user.confirmation_code != attrs.get('confirmation_code'):
+            raise ValidationError('Invalid confirmation code')
