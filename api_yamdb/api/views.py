@@ -7,7 +7,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, pagination, permissions, status, viewsets
+from rest_framework import (filters,
+                            mixins,
+                            pagination,
+                            permissions,
+                            status,
+                            viewsets)
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -16,7 +21,9 @@ from rest_framework.views import APIView
 from reviews.models import Category, Comment, Genre, Review, Title
 
 from .filters import TitleFilter
-from .permissions import IsAdminOrSuperUser, IsAuthorOrModeratorOrAdmin, IsSafeMethod
+from .permissions import (IsAdminOrSuperUser,
+                          IsAuthorOrModeratorOrAdmin,
+                          IsSafeMethod)
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
