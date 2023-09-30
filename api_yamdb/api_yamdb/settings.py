@@ -18,9 +18,9 @@ JWT_ACCESS_TTL = 60 * 5
 
 FROM_EMAIL = os.getenv('FROM_EMAIL')
 
-DEBUG = os.getenv('DEBUG')
+DEBUG = os.getenv("DEBUG", 'False').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(', ')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
