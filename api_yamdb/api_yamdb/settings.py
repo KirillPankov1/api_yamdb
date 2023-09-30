@@ -8,16 +8,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
 
-SECRET_KEY = os.getenv('SECRET_KEY')
-FROM_EMAIL = os.getenv('FROM_EMAIL')
 LEN_MAX = 256
 LEN_NAME_SLUG = 50
 NUMBER_OF_VALUES = 254
 
-DEBUG = True
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-ALLOWED_HOSTS = ['*']
+FROM_EMAIL = os.getenv('FROM_EMAIL')
 
+DEBUG = os.getenv('DEBUG')
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
