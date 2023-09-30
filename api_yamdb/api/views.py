@@ -1,10 +1,10 @@
 import logging
 
+import jwt
 from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-import jwt
 from rest_framework import (viewsets,
                             permissions,
                             status,
