@@ -49,8 +49,8 @@ class SignUpView(APIView):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user, _ = User.objects.get_or_create(
-        username=serializer.validated_data['username'],
-        email=serializer.validated_data['email'])
+            username=serializer.validated_data['username'],
+            email=serializer.validated_data['email'])
         send_confirmation_code(
             serializer.validated_data['email'], user.confirmation_code)
         return Response(
